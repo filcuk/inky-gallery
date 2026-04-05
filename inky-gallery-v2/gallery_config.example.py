@@ -1,5 +1,18 @@
 # Copy this file to gallery_config.py on the device (same directory as main.py).
-# gallery_config.py is gitignored — do not commit real tokens.
+
+# User detail
+NAME = "John Doe"
+
+# Shown on the launcher: one line is picked at random each time the menu is drawn.
+QUOTES = [
+    "The best camera is the one you have with you.",
+    "Every picture tells a story.",
+    "Life is a journey, not a destination.",
+]
+
+# WiFi credentials
+WIFI_SSID = "your-wifi-ssid"
+WIFI_PASSWORD = "your-wifi-password"
 
 # Minutes between slideshow advances (stock launcher calls ih.sleep with this).
 SLIDESHOW_INTERVAL_MINUTES = 60

@@ -2,15 +2,13 @@ import gc
 import time
 
 import inky_helper as ih
-from inky_frame import BLUE, GREEN, WHITE
+import network
+import random
+from inky_frame import BLACK, BLUE, GREEN, WHITE
 from machine import reset
 from picographics import PicoGraphics
 
 # Match your hardware / firmware (7.3" colour = Spectra).
-
-# secrets.py on device:
-# WIFI_SSID = "..."
-# WIFI_PASSWORD = "..."
 from picographics import DISPLAY_INKY_FRAME_7 as DISPLAY
 # from picographics import DISPLAY_INKY_FRAME_SPECTRA_7 as DISPLAY  # Newer 2025 revision
 
@@ -22,6 +20,8 @@ WIDTH, HEIGHT = graphics.get_bounds()
 graphics.set_font("bitmap8")
 
 network_online = False
+name_provided = False
+launcher_quotes = []
 
 def launcher():
     ih.led_warn.off()
@@ -34,6 +34,7 @@ def launcher():
         y_offset = 0
 
     # Draw the menu
+    ## Background
     graphics.set_pen(WHITE)
     graphics.clear()
 
@@ -45,18 +46,43 @@ def launcher():
     title_len = graphics.measure_text(title, 4) // 2
     graphics.text(title, (WIDTH // 2 - title_len), 10, WIDTH, 4)
 
+    ## Welcome message
+    if name_provided:
+        graphics.set_pen(BLACK)
+        if launcher_quotes:
+            quote = launcher_quotes[random.randrange(len(launcher_quotes))]
+            welcome = "Welcome, " + NAME + "! " + quote
+        else:
+            welcome = "Welcome, " + NAME + "!"
+        
+        welcome_len = graphics.measure_text(welcome, 2) // 2
+        graphics.text(welcome, (WIDTH // 2 - welcome_len), 60 + 10, 600, 2)
+
+    ## First item
     graphics.set_pen(GREEN)
     graphics.rectangle(30, HEIGHT - (340 + y_offset), WIDTH - 100, 50)
     graphics.set_pen(1)
     graphics.text("A. Offline (SD card)", 35, HEIGHT - (325 + y_offset), 600, 3)
 
-    graphics.set_pen(BLUE)
-    graphics.rectangle(30, HEIGHT - (280 + y_offset), WIDTH - 150, 50)
-    graphics.set_pen(1)
-    graphics.text("B. Online (GitHub sync)", 35, HEIGHT - (265 + y_offset), 600, 3)
+    ## Second item
+    bx = 30
+    by = HEIGHT - (280 + y_offset)
+    bw = WIDTH - 100
+    bh = 50
+    if network_online:
+        graphics.set_pen(BLUE)
+        graphics.rectangle(bx, by, bw, bh)
+        graphics.set_pen(1)
+        graphics.text("B. Online (GitHub sync)", 35, HEIGHT - (265 + y_offset), 600, 3)
+    else:
+        graphics.set_pen(graphics.create_pen(220, 220, 220))
+        graphics.rectangle(bx, by, bw, bh)
+        graphics.set_pen(1)
+        graphics.text("B. Online (GitHub sync) [UNAVAILABLE]", 35, HEIGHT - (265 + y_offset), 600, 3)
 
-    graphics.set_pen(1)
-    note = "Hold A + E, then press Reset, to return here"
+    ## Note
+    graphics.set_pen(BLACK)
+    note = "Hold A + E then press Reset to return here"
     note_len = graphics.measure_text(note, 2) // 2
     graphics.text(note, (WIDTH // 2 - note_len), HEIGHT - 30, 600, 2)
 
@@ -94,6 +120,23 @@ try:
     network_online = network.WLAN(network.STA_IF).status() == 3
 except ImportError:
     print("Add WiFi credentials to gallery_config.py")
+
+# Load name, if provided
+try:
+    from gallery_config import NAME
+
+    name_provided = NAME is not None and NAME != ""
+except ImportError:
+    print("Add name to gallery_config.py")
+
+# Load quotes, if provided
+try:
+    from gallery_config import QUOTES
+
+    if isinstance(QUOTES, (list, tuple)) and len(QUOTES) > 0:
+        launcher_quotes = [str(s) for s in QUOTES if s]
+except ImportError:
+    pass
 
 if ih.inky_frame.button_a.read() and ih.inky_frame.button_e.read():
     launcher()
