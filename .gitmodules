@@ -1,0 +1,3 @@
+[submodule "pimoroni"]
+	path = pimoroni
+	url = https://github.com/pimoroni/inky-frame
