@@ -118,6 +118,9 @@ def sync_from_github(cfg):
     else:
         return [], "Unexpected GitHub response"
 
+    # Free memory after JSON parse on tight builds.
+    gc.collect()
+
     folder_clean = folder.strip("/")
     new_files = []
     total = 0
