@@ -53,6 +53,9 @@ Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.
 ### Mount SD card before Wi-Fi 
 `inky-gallery-v2` also **mounts the SD before Wi‑Fi starts** to avoid init-order problems on some **Pico 2 W** boards.
 
+### SD mount helper is "active" (by design)
+The SD mount routine in `inky-gallery-v2/gallery_common.py` may **temporarily disconnect/disable Wi‑Fi** while attempting to mount the SD card. This is intentional because some Pico 2 W/Inky Frame firmware builds fail SD initialisation if Wi‑Fi is active first.
+
 ### SD: timeout waiting for v2 card
 - Reformat the card
 - Try using a different card
@@ -61,3 +64,8 @@ Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.
 
 ### `[Errno 19] ENODEV`
 **`[Errno 19] ENODEV`** means MicroPython cannot see the SD hardware: reseat the card, format as **FAT**, try another card (see [Pimoroni’s SD notes](https://learn.pimoroni.com/article/getting-started-with-inky-frame)).  
+
+## Slideshow navigation (A/E)
+In slideshow apps, **A = previous** and **E = next**.
+
+Note: the button press is detected during the USB-powered wait/sleep loop. On **battery sleep**, the Pico powers down between refreshes, so A/E cannot interrupt sleep in the same way (the button will work again after the next wake).
