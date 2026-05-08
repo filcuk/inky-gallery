@@ -10,8 +10,6 @@ Official Inky Frame guide: **[Getting started with Inky Frame](https://learn.pim
 - **`inky-gallery-v2/`**: launcher with gallery offline/online modes
 - **`inky-frame-original/`**: reference copy of stock launcher-style files
 
----
-
 ## Flashing firmware with Raspberry Pi Imager
 
 1. **Download image**  
@@ -25,9 +23,7 @@ Official Inky Frame guide: **[Getting started with Inky Frame](https://learn.pim
 3. **Flash the UF2**
   Drag-and-drop the .uf2 file onto the mounted drive, it will restart automatically
 
----
-
-## Erasing flash (“nuke”) on Pico / Pico 2 W
+## Erasing flash ("nuke") on Pico / Pico 2 W
 
 Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.  
 **[Pico Universal Flash Nuke](https://github.com/Gadgetoid/pico-universal-flash-nuke)** detects flash size and erases it; intended to work across **RP2040 and RP2350** with a single UF2.  
@@ -35,6 +31,12 @@ Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.
 1. **Download the nuke**: [releases](https://github.com/Gadgetoid/pico-universal-flash-nuke/releases/latest)
 1. **Enter BOOTSEL**, copy the nuke UF2 onto the drive, wait for it to finish and the board to reconnect
 1. **Flash MicroPython** and restore your files
+
+## Uploading files to Pico
+
+1. Install [Thonny](https://thonny.org/)
+2. Launch and select board at the bottom right corner
+3. Press 'Stop' to attach/restart backend
 
 ## SD card
 
