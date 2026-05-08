@@ -40,6 +40,11 @@ def network_led(brightness):
 network_led_timer = Timer(-1)
 network_led_pulse_speed_hz = 1
 
+# menu-selection "throb" for button LEDs (digital blink)
+_btn_throb_timer = Timer(-1)
+_btn_throb_button = None
+_btn_throb_on = False
+
 
 def network_led_callback(_t):
     # updates the network led brightness based on a sinusoid seeded by the current time
@@ -120,6 +125,44 @@ def clear_button_leds():
     inky_frame.button_c.led_off()
     inky_frame.button_d.led_off()
     inky_frame.button_e.led_off()
+
+
+def _btn_throb_callback(_t):
+    global _btn_throb_on
+    try:
+        b = _btn_throb_button
+        if b is None:
+            return
+        if _btn_throb_on:
+            b.led_off()
+            _btn_throb_on = False
+        else:
+            b.led_on()
+            _btn_throb_on = True
+    except Exception:
+        pass
+
+
+def start_button_led_throb(button):
+    """Blink a single button LED until stop_button_led_throb() is called."""
+    global _btn_throb_button, _btn_throb_on
+    stop_button_led_throb()
+    _btn_throb_button = button
+    _btn_throb_on = False
+    try:
+        _btn_throb_timer.init(period=120, mode=Timer.PERIODIC, callback=_btn_throb_callback)
+    except Exception as e:
+        log("start_button_led_throb:", e)
+
+
+def stop_button_led_throb():
+    global _btn_throb_button, _btn_throb_on
+    try:
+        _btn_throb_timer.deinit()
+    except Exception:
+        pass
+    _btn_throb_button = None
+    _btn_throb_on = False
 
 
 def network_connect(SSID, PSK):

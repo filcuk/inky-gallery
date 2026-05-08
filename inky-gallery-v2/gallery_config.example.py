@@ -53,4 +53,11 @@ GITHUB_BRANCH = "main"
 GITHUB_PAT = ""
 
 # How often to re-list and download from GitHub (wall clock, best effort using time.time()).
-GITHUB_SYNC_INTERVAL_MINUTES = 360
+GITHUB_SYNC_INTERVAL_MINUTES = 1440
+
+# Customise SD SPI/pins 
+# SD_SPI_ID = 0
+# SD_SCK_PIN = 18
+# SD_MOSI_PIN = 19
+# SD_MISO_PIN = 16
+# SD_CS_PIN = 22

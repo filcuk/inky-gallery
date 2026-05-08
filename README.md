@@ -4,6 +4,16 @@ Custom gallery for **Pimoroni Inky Frame**, aimed at 7.3 with **Raspberry Pi Pic
 
 Official Inky Frame guide: **[Getting started with Inky Frame](https://learn.pimoroni.com/article/getting-started-with-inky-frame)**.
 
+## Functionality
+
+- Update included config
+- Device loads into a menu
+- Choose between online and offline mode
+- Online polls remote for new images regularly while running a slideshow
+- Offline just runs a slideshow
+- Slideshow uses a randomised 'playlist' which, together with last position, persists across restarts
+- Playlists can be manually randomised from the main menu
+
 ## Repository structure
 
 - **`inky-gallery-v1/`**: earlier offline-only experiment
@@ -40,6 +50,9 @@ Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.
 
 ## SD card
 
+### Mount SD card before Wi-Fi 
+`inky-gallery-v2` also **mounts the SD before Wi‑Fi starts** to avoid init-order problems on some **Pico 2 W** boards.
+
 ### SD: timeout waiting for v2 card
 - Reformat the card
 - Try using a different card
@@ -48,4 +61,3 @@ Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.
 
 ### `[Errno 19] ENODEV`
 **`[Errno 19] ENODEV`** means MicroPython cannot see the SD hardware: reseat the card, format as **FAT**, try another card (see [Pimoroni’s SD notes](https://learn.pimoroni.com/article/getting-started-with-inky-frame)).  
-`inky-gallery-v2` also **mounts the SD before Wi‑Fi starts** to avoid init-order problems on some **Pico 2 W** boards.

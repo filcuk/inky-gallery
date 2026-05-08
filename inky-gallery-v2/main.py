@@ -3,9 +3,9 @@ import time
 
 from gallery_log import log
 import inky_helper as ih
+import gallery_common as common
 import random
-from inky_frame import BLACK, BLUE, GREEN, WHITE
-from machine import reset
+from inky_frame import BLACK, WHITE, GREEN, BLUE, RED, YELLOW, ORANGE, TAUPE
 from picographics import PicoGraphics
 
 # Match your hardware
@@ -69,33 +69,39 @@ def launcher():
         welcome_len = graphics.measure_text(welcome, 2) // 2
         graphics.text(welcome, (WIDTH // 2 - welcome_len), 60 + 10, 600, 2)
 
-    ## First item: Offline gallery
-    graphics.set_pen(GREEN)
-    graphics.rectangle(30, HEIGHT - (340 + y_offset), WIDTH - 60, 50)
-    graphics.set_pen(WHITE)
-    graphics.text("A. Offline (SD card)", 60, HEIGHT - (325 + y_offset), 600, 3)
-
-    ## Second item: Online gallery
+    ## A: Slideshow (online)
     bx = 30
-    by = HEIGHT - (280 + y_offset)
+    by = HEIGHT - (340 + y_offset)
     bw = WIDTH - 60
     bh = 50
     if network_online:
         graphics.set_pen(BLUE)
         graphics.rectangle(bx, by, bw, bh)
         graphics.set_pen(WHITE)
-        graphics.text("B. Online (GitHub sync)", 60, HEIGHT - (265 + y_offset), 600, 3)
+        graphics.text("A. Slideshow (online)", 60, HEIGHT - (325 + y_offset), 600, 3)
     else:
         graphics.set_pen(graphics.create_pen(220, 220, 220))
         graphics.rectangle(bx, by, bw, bh)
         graphics.set_pen(WHITE)
-        graphics.text("B. Online (GitHub sync) [UNAVAILABLE]", 45, HEIGHT - (265 + y_offset), 600, 3)
+        graphics.text("A. Slideshow (online) [UNAVAILABLE]", 35, HEIGHT - (325 + y_offset), 600, 3)
 
-    # Test items
-    graphics.set_pen(graphics.create_pen(200, 200, 200))
+    ## B: Slideshow (offline)
+    graphics.set_pen(GREEN)
+    graphics.rectangle(30, HEIGHT - (280 + y_offset), WIDTH - 60, 50)
+    graphics.set_pen(WHITE)
+    graphics.text("B. Slideshow (offline)", 60, HEIGHT - (265 + y_offset), 600, 3)
+
+    ## C: Randomise
+    graphics.set_pen(ORANGE)
     graphics.rectangle(30, HEIGHT - (220 + y_offset), WIDTH - 60, 50)
+    graphics.set_pen(WHITE)
+    graphics.text("C. Randomise", 60, HEIGHT - (205 + y_offset), 600, 3)
+
+    ## D: Test image
+    graphics.set_pen(graphics.create_pen(200, 200, 200))
+    graphics.rectangle(30, HEIGHT - (160 + y_offset), WIDTH - 60, 50)
     graphics.set_pen(BLACK)
-    graphics.text("C. Test Image", 60, HEIGHT - (205 + y_offset), 600, 3)
+    graphics.text("D. Test Image", 60, HEIGHT - (145 + y_offset), 600, 3)
 
     # graphics.set_pen(graphics.create_pen(200, 200, 200))
     # graphics.rectangle(30, HEIGHT - (160 + y_offset), WIDTH - 60, 50)
@@ -126,11 +132,11 @@ def launcher():
 
     # Activate LEDs
     ih.inky_frame.button_a.led_on()
-    if network_online:
-        ih.inky_frame.button_b.led_on()
-    else:
-        ih.inky_frame.button_b.led_off()
+    ih.inky_frame.button_b.led_on()
     ih.inky_frame.button_c.led_on()
+    ih.inky_frame.button_d.led_on()
+    if not network_online:
+        ih.inky_frame.button_a.led_off()
 
     # Now we've drawn the menu to the screen, we wait here for the user to select an app.
     # Then once an app is selected, we set that as the current app and reset the device and load into it.
@@ -138,24 +144,72 @@ def launcher():
     while True:
         if _btn_read(ih.inky_frame.button_a):
             log("Launcher: button A pressed")
-            ih.inky_frame.button_a.led_off()
-            ih.update_state("gallery_offline")
-            time.sleep(0.5)
-            reset()
-        if _btn_read(ih.inky_frame.button_b):
-            log("Launcher: button B pressed")
             if not network_online:
                 time.sleep(0.3)
-                ih.inky_frame.button_b.led_off()
+                ih.inky_frame.button_a.led_off()
             else:
+                ih.inky_frame.button_a.led_off()
                 ih.update_state("gallery_online")
-                time.sleep(0.5)
-                reset()
+                ih.clear_button_leds()
+                ih.start_button_led_throb(ih.inky_frame.button_a)
+                return "gallery_online"
+        if _btn_read(ih.inky_frame.button_b):
+            log("Launcher: button B pressed")
+            ih.inky_frame.button_b.led_off()
+            ih.update_state("gallery_offline")
+            ih.clear_button_leds()
+            ih.start_button_led_throb(ih.inky_frame.button_b)
+            return "gallery_offline"
         if _btn_read(ih.inky_frame.button_c):
-            log("Launcher: button E pressed")
+            log("Launcher: button C pressed")
+            # Randomise playlist in-place, stay on menu (no redraw).
+            try:
+                cfg = common.get_config()
+                folder = getattr(cfg, "GALLERY_SD_FOLDER", "/sd/gallery")
+                if common.ensure_sd(fast=True) or common.ensure_sd():
+                    items = common.generate_playlist(folder)
+                    common.save_position(-1, "")
+                    try:
+                        n = len(items) if items else 0
+                        log("Randomise: shuffled", n, "image(s)")
+                        if n:
+                            preview = items[:5]
+                            for i, p in enumerate(preview):
+                                log("Randomise:", i, p)
+                            if n > 5:
+                                log("Randomise: ...")
+                    except Exception:
+                        pass
+                else:
+                    log("Randomise: SD unavailable:", common.sd_mount_error() or "")
+            except Exception as e:
+                log("Randomise:", type(e).__name__, e)
+
+            # Throb a few times then return to waiting.
+            try:
+                ih.clear_button_leds()
+                for _i in range(6):
+                    ih.inky_frame.button_c.led_on()
+                    time.sleep_ms(120)
+                    ih.inky_frame.button_c.led_off()
+                    time.sleep_ms(120)
+            except Exception:
+                pass
+            ih.clear_button_leds()
+            ih.inky_frame.button_a.led_on()
+            ih.inky_frame.button_b.led_on()
+            ih.inky_frame.button_c.led_on()
+            ih.inky_frame.button_d.led_on()
+            if not network_online:
+                ih.inky_frame.button_a.led_off()
+            continue
+        if _btn_read(ih.inky_frame.button_d):
+            log("Launcher: button D pressed")
+            ih.inky_frame.button_d.led_off()
             ih.update_state("test_image")
-            time.sleep(0.5)
-            reset()
+            ih.clear_button_leds()
+            ih.start_button_led_throb(ih.inky_frame.button_d)
+            return "test_image"
 
 
 log("Main: starting launcher")
@@ -164,13 +218,13 @@ ih.led_warn.off()
 
 ## Mount SD before Wi-Fi: on some Pico 2 W builds the card fails with ENODEV if Wi-Fi is brought up first.
 ## Use a fast/one-shot attempt so boot UI doesn't stall for minutes if SD init is slow.
-# try:
-#     import gallery_common as common
-#     log("SD pre-mount: fast attempt")
-#     if common.ensure_sd(fast=True):``
-#         log("SD pre-mount: success")
-# except Exception as e:
-#     log("SD pre-mount: error ", e)
+try:
+    import gallery_common as common
+    log("SD pre-mount: fast attempt")
+    if common.ensure_sd(fast=True):
+        log("SD pre-mount: success")
+except Exception as e:
+    log("SD pre-mount: error ", e)
 
 # Load WiFi credentials (do not connect here; connect only in online app)
 try:
@@ -206,30 +260,45 @@ except ImportError:
 
 if _btn_read(ih.inky_frame.button_a) and _btn_read(ih.inky_frame.button_e):
     log("Input: A + E detected")
-    launcher()
+    app_name = launcher()
+else:
+    app_name = None
 
-if ih.file_exists(ih.STATE_PATH):
+if app_name is not None:
+    # Menu selection (no reboot): launch immediately.
+    pass
+elif ih.file_exists(ih.STATE_PATH):
     # Loads the JSON and launches the app
     log("State: loading state")
     ih.load_state()
     log("State: loaded")
-    # Defensive: if we're about to run an offline-style app, ensure Wi-Fi is off.
-    try:
-        if ih.state.get("run") != "gallery_online":
-            ih.network_disconnect()
-    except Exception:
-        pass
-    # Don't re-write state.json here; launcher selection already wrote it.
-    # This allows PERMANENT_SELECTION=False to behave like "run once".
-    ih.launch_app(ih.state["run"], persist=False)
-    log("State: app launched") 
-    # Passes the the graphics object from the launcher to the app
-    ih.app.graphics = graphics
-    ih.app.WIDTH = WIDTH
-    ih.app.HEIGHT = HEIGHT
+    app_name = ih.state.get("run")
 else:
     log("State: not found; starting launcher")
-    launcher()
+    app_name = launcher()
+
+# Defensive: if we're about to run an offline-style app, ensure Wi-Fi is off.
+try:
+    if app_name != "gallery_online":
+        ih.network_disconnect()
+except Exception:
+    pass
+
+# Always start apps with button LEDs off.
+try:
+    ih.clear_button_leds()
+except Exception:
+    pass
+
+# Don't re-write state.json here; launcher selection already wrote it.
+# This allows PERMANENT_SELECTION=False to behave like "run once" on next boot.
+ih.launch_app(app_name, persist=False)
+log("State: app launched")
+
+# Pass the graphics object from the launcher to the app
+ih.app.graphics = graphics
+ih.app.WIDTH = WIDTH
+ih.app.HEIGHT = HEIGHT
 
 # Get some memory back, we really need it!
 log("Main: collecting garbage")
@@ -247,5 +316,22 @@ while True:
     ih.led_warn.on()
     ih.app.draw()
     ih.led_warn.off()
-    log("Main loop: sleep")
+    
+    try:
+        ih.stop_button_led_throb()
+        ih.clear_button_leds()
+    except Exception:
+        pass
+    
+    try:
+        mins = int(getattr(ih.app, "UPDATE_INTERVAL", 0))
+    except Exception:
+        mins = 0
+    log("Main loop: sleep;", mins, "minute(s) until next wake")
+    # Always turn off Wi-Fi (and its LED) before sleeping.
+    try:
+        ih.network_disconnect()
+    except Exception:
+        pass
+    
     ih.sleep(ih.app.UPDATE_INTERVAL)

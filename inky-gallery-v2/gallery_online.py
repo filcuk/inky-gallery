@@ -17,6 +17,7 @@ _files = []
 _idx = -1
 _status = ""
 _sync_note = ""
+_path = None
 
 gc.collect()
 
@@ -27,17 +28,18 @@ def _wifi_ok():
 
 
 def update():
-    global _files, _idx, _status, _sync_note
+    global _files, _idx, _status, _sync_note, _path
     gc.collect()
     cfg = g.get_config()
 
-    # Use fast SD mount so we can show a message quickly if init is timing out.
+    # Ensure SD is mounted before Wi-Fi is started
     if not g.ensure_sd(fast=True):
-        detail = g.sd_mount_error() or ""
-        _sync_note = "SD: %s" % g.friendly_sd_message(detail)
-        _files = []
-        _status = "SD card not available"
-        return
+        if not g.ensure_sd():
+            detail = g.sd_mount_error() or ""
+            _sync_note = "SD: %s" % g.friendly_sd_message(detail)
+            _path = None
+            _status = "SD card not available"
+            return
 
     # Bring up Wi-Fi only when online sync is needed.
     if (not _wifi_ok()) and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
@@ -46,36 +48,31 @@ def update():
         if ssid and pwd:
             ih.network_connect(ssid, pwd)
 
+    new_files = []
     if _wifi_ok() and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
-        err = gh.sync_from_github(cfg)
+        new_files, err = gh.sync_from_github(cfg)
         _sync_note = "" if err is None else err
+        # Power saving: once sync is complete, shut Wi-Fi back down.
+        try:
+            ih.network_disconnect()
+        except Exception:
+            pass
     elif not getattr(cfg, "GITHUB_PAT", ""):
         _sync_note = "Set GITHUB_PAT in gallery_config.py"
 
-    g.ensure_dir(cfg.GALLERY_SD_FOLDER)
-    _files = g.list_jpegs(cfg.GALLERY_SD_FOLDER)
-    if not _files:
-        lines = ["Online gallery", _sync_note or _status or "No JPEGs after sync"]
-        _status = lines[-1]
-        return
-    st = g.load_slideshow_state("online")
-    last_path = st.get("last_path")
-    if last_path and last_path in _files:
-        _idx = (_files.index(last_path) + 1) % len(_files)
-    else:
-        _idx = 0
-    g.save_slideshow_state("online", {"last_path": _files[_idx]})
-    _status = ""
+    # Slideshow step. If we downloaded new files, insert them as "next up" and jump to them.
+    _path, _status = g.slideshow_next(cfg.GALLERY_SD_FOLDER, insert_next_paths=new_files)
+    _files = []  # legacy, no longer used
+    _idx = -1
 
 
 def draw():
-    global _files, _sync_note, _status
-    if not _files:
+    global _path, _sync_note, _status
+    if not _path:
         lines = ["Online gallery", _sync_note or _status or "No images"]
         g.draw_status(graphics, WIDTH, HEIGHT, lines)
         return
-    path = _files[_idx]
-    if not g.draw_jpeg(graphics, WIDTH, HEIGHT, path):
-        _files = []
+    if not g.draw_jpeg(graphics, WIDTH, HEIGHT, _path):
+        _path = None
         _sync_note = _sync_note or "SD read failed (readblocks)"
         _status = "Will retry mount next cycle"
