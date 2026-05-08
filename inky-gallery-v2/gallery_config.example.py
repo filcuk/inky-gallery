@@ -36,11 +36,8 @@ PERMANENT_SELECTION = False
 WIFI_SSID = "your-wifi-ssid"
 WIFI_PASSWORD = "your-wifi-password"
 
-# Minutes between slideshow advances; used for sleep
+# Minutes between slideshow advances; used for sleep and github polling
 SLIDESHOW_INTERVAL_MINUTES = 1440
-
-# How often to re-list and download from GitHub; should be a multiple of SLIDESHOW_INTERVAL_MINUTES
-GITHUB_SYNC_INTERVAL_MINUTES = 1440
 
 # Where JPEGs live on the SD card (created automatically when possible).
 GALLERY_SD_FOLDER = "/sd/gallery"

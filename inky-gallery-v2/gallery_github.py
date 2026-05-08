@@ -217,25 +217,6 @@ def sync_from_github(cfg):
             pass
 
     log("GitHub: done", "listed =", total, "downloaded =", downloaded, "skipped =", skipped)
-    try:
-        with open(dest_root + "/.last_github_sync", "w") as f:
-            f.write(str(int(time.time())))
-    except OSError:
-        pass
 
     gc.collect()
     return new_files, None
-
-
-def should_sync(cfg):
-    interval_s = int(getattr(cfg, "GITHUB_SYNC_INTERVAL_MINUTES", 360)) * 60
-    marker = cfg.GALLERY_SD_FOLDER.rstrip("/") + "/.last_github_sync"
-    try:
-        with open(marker, "r") as f:
-            last = int(f.read())
-    except (OSError, ValueError):
-        last = 0
-    now = time.time()
-    if now < 1e9:
-        return True
-    return (now - last) >= interval_s

@@ -36,11 +36,6 @@ def update():
         UPDATE_INTERVAL = int(getattr(cfg, "SLIDESHOW_INTERVAL_MINUTES", 60))
     except Exception:
         UPDATE_INTERVAL = 60
-    try:
-        from gallery_log import log
-        log("Online: interval", UPDATE_INTERVAL, "minute(s)")
-    except Exception:
-        pass
 
     nav = None
     try:
@@ -67,15 +62,15 @@ def update():
             _status = "SD card not available"
             return
 
-    # Bring up Wi-Fi only when online sync is needed.
-    if (not _wifi_ok()) and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
+    # Bring up Wi-Fi only when online sync is needed (online gallery syncs every slideshow cycle).
+    if (not _wifi_ok()) and getattr(cfg, "GITHUB_PAT", ""):
         ssid = getattr(cfg, "WIFI_SSID", "") or ""
         pwd = getattr(cfg, "WIFI_PASSWORD", "") or ""
         if ssid and pwd:
             ih.network_connect(ssid, pwd)
 
     new_files = []
-    if _wifi_ok() and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
+    if _wifi_ok() and getattr(cfg, "GITHUB_PAT", ""):
         new_files, err = gh.sync_from_github(cfg)
         _sync_note = "" if err is None else err
         # Power saving: once sync is complete, shut Wi-Fi back down.

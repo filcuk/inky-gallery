@@ -26,7 +26,6 @@ class _Defaults:
     GITHUB_PATH = ""
     GITHUB_BRANCH = "main"
     GITHUB_PAT = ""
-    GITHUB_SYNC_INTERVAL_MINUTES = 1440
 
 
 def get_config():
