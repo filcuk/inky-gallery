@@ -18,9 +18,18 @@ gc.collect()
 
 
 def update():
-    global _files, _idx, _status, _path
+    global _files, _idx, _status, _path, UPDATE_INTERVAL
     gc.collect()
     cfg = g.get_config()
+    try:
+        UPDATE_INTERVAL = int(getattr(cfg, "SLIDESHOW_INTERVAL_MINUTES", 60))
+    except Exception:
+        UPDATE_INTERVAL = 60
+    try:
+        from gallery_log import log
+        log("Offline: interval", UPDATE_INTERVAL, "minute(s)")
+    except Exception:
+        pass
     _path, _status = g.slideshow_next(cfg.GALLERY_SD_FOLDER)
     _files = []  # legacy, no longer used
     _idx = -1

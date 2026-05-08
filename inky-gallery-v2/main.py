@@ -334,4 +334,8 @@ while True:
     except Exception:
         pass
     
-    ih.sleep(ih.app.UPDATE_INTERVAL)
+    try:
+        interval = int(getattr(ih.app, "UPDATE_INTERVAL", 60))
+    except Exception:
+        interval = 60
+    ih.sleep(interval)

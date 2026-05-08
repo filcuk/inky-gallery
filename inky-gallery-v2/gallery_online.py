@@ -28,9 +28,18 @@ def _wifi_ok():
 
 
 def update():
-    global _files, _idx, _status, _sync_note, _path
+    global _files, _idx, _status, _sync_note, _path, UPDATE_INTERVAL
     gc.collect()
     cfg = g.get_config()
+    try:
+        UPDATE_INTERVAL = int(getattr(cfg, "SLIDESHOW_INTERVAL_MINUTES", 60))
+    except Exception:
+        UPDATE_INTERVAL = 60
+    try:
+        from gallery_log import log
+        log("Online: interval", UPDATE_INTERVAL, "minute(s)")
+    except Exception:
+        pass
 
     # Ensure SD is mounted before Wi-Fi is started
     if not g.ensure_sd(fast=True):
