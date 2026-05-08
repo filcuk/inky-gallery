@@ -11,6 +11,8 @@ import sdcard
 _sd_mounted = False
 _jpeg = None
 _sd_last_error = None
+_STATE_DIR = "/sd/.inky_gallery"
+_STATE_FILE = _STATE_DIR + "/state.json"
 
 
 class _Defaults:
@@ -85,8 +87,12 @@ def _spi_for_sd(baud):
     return SPI(0, baudrate=baud, sck=sck, mosi=mosi, miso=miso)
 
 
-def ensure_sd():
-    """Mount the Inky Frame SD card at /sd. Returns True on success."""
+def ensure_sd(fast=False):
+    """Mount the Inky Frame SD card at /sd. Returns True on success.
+
+    fast=True performs a quick, minimal attempt intended for boot-time use so the UI
+    doesn't appear to hang if the card is missing or slow to init.
+    """
     global _sd_mounted, _sd_last_error
     if _sd_mounted:
         return True
@@ -102,13 +108,19 @@ def ensure_sd():
     _sd_last_error = None
     cs = Pin(22, Pin.OUT)
     # Short sequence only: 12 nested tries each waited for full SD timeout → very slow boot with no card.
-    attempts = (
-        (None, 100000),
-        (200000, 100000),
-        (400000, 200000),
-        (None, 400000),
-        (1000000, 400000),
-    )
+    if fast:
+        # One quick shot at a conservative init speed; avoids multi-minute stalls at boot.
+        attempts = (
+            (400000, 100000),
+        )
+    else:
+        attempts = (
+            (None, 100000),
+            (200000, 100000),
+            (400000, 200000),
+            (None, 400000),
+            (1000000, 400000),
+        )
     for spi_baud, card_baud in attempts:
         sd_spi = None
         try:
@@ -136,6 +148,66 @@ def ensure_dir(path):
         os.mkdir(path)
     except OSError:
         pass
+
+
+def _ensure_state_dir():
+    if not ensure_sd():
+        return False
+    try:
+        os.mkdir(_STATE_DIR)
+    except OSError:
+        pass
+    return True
+
+
+def load_slideshow_state(app_key):
+    """Best-effort load of slideshow state from SD. Returns dict."""
+    if not _ensure_state_dir():
+        return {}
+    try:
+        import ujson as json
+    except ImportError:
+        import json
+    try:
+        with open(_STATE_FILE, "r") as f:
+            raw = f.read()
+        data = json.loads(raw) if raw else {}
+        if type(data) is not dict:
+            data = {}
+    except OSError:
+        data = {}
+    except Exception as e:
+        log("load_slideshow_state:", type(e).__name__, e)
+        data = {}
+    out = data.get(str(app_key), {})
+    return out if type(out) is dict else {}
+
+
+def save_slideshow_state(app_key, state):
+    """Best-effort save of slideshow state to SD. Does not raise."""
+    if not _ensure_state_dir():
+        return False
+    try:
+        import ujson as json
+    except ImportError:
+        import json
+    try:
+        try:
+            with open(_STATE_FILE, "r") as f:
+                raw = f.read()
+            data = json.loads(raw) if raw else {}
+            if type(data) is not dict:
+                data = {}
+        except OSError:
+            data = {}
+        data[str(app_key)] = state if type(state) is dict else {}
+        with open(_STATE_FILE, "w") as f:
+            f.write(json.dumps(data))
+            f.flush()
+        return True
+    except Exception as e:
+        log("save_slideshow_state:", type(e).__name__, e)
+        return False
 
 
 def list_jpegs(folder):

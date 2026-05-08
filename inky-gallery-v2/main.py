@@ -59,7 +59,7 @@ def launcher():
 
     ## Welcome message
     if name_provided:
-        graphics.set_pen(WHITE)
+        graphics.set_pen(BLACK)
         if launcher_quotes:
             quote = launcher_quotes[random.randrange(len(launcher_quotes))]
             welcome = "Welcome, " + NAME + "! " + quote
@@ -71,14 +71,14 @@ def launcher():
 
     ## First item: Offline gallery
     graphics.set_pen(GREEN)
-    graphics.rectangle(30, HEIGHT - (340 + y_offset), WIDTH - 100, 50)
+    graphics.rectangle(30, HEIGHT - (340 + y_offset), WIDTH - 60, 50)
     graphics.set_pen(WHITE)
     graphics.text("A. Offline (SD card)", 60, HEIGHT - (325 + y_offset), 600, 3)
 
     ## Second item: Online gallery
     bx = 30
     by = HEIGHT - (280 + y_offset)
-    bw = WIDTH - 100
+    bw = WIDTH - 60
     bh = 50
     if network_online:
         graphics.set_pen(BLUE)
@@ -93,19 +93,19 @@ def launcher():
 
     # Test items
     graphics.set_pen(graphics.create_pen(200, 200, 200))
-    graphics.rectangle(30, HEIGHT - (220 + y_offset), WIDTH - 100, 50)
+    graphics.rectangle(30, HEIGHT - (220 + y_offset), WIDTH - 60, 50)
     graphics.set_pen(BLACK)
-    graphics.text("C. Test Buttons & LEDs", 60, HEIGHT - (205 + y_offset), 600, 3)
+    graphics.text("C. Test Image", 60, HEIGHT - (205 + y_offset), 600, 3)
 
-    graphics.set_pen(graphics.create_pen(200, 200, 200))
-    graphics.rectangle(30, HEIGHT - (160 + y_offset), WIDTH - 100, 50)
-    graphics.set_pen(BLACK)
-    graphics.text("D. Test WIFI & SD card", 60, HEIGHT - (145 + y_offset), 600, 3)
+    # graphics.set_pen(graphics.create_pen(200, 200, 200))
+    # graphics.rectangle(30, HEIGHT - (160 + y_offset), WIDTH - 60, 50)
+    # graphics.set_pen(BLACK)
+    # graphics.text("D. Test WIFI & SD card", 60, HEIGHT - (145 + y_offset), 600, 3)
 
-    graphics.set_pen(graphics.create_pen(200, 200, 200))
-    graphics.rectangle(30, HEIGHT - (100 + y_offset), WIDTH - 100, 50)
-    graphics.set_pen(BLACK)
-    graphics.text("E. Test image", 60, HEIGHT - (85 + y_offset), 600, 3)
+    # graphics.set_pen(graphics.create_pen(200, 200, 200))
+    # graphics.rectangle(30, HEIGHT - (100 + y_offset), WIDTH - 60, 50)
+    # graphics.set_pen(BLACK)
+    # graphics.text("E. Test image", 60, HEIGHT - (85 + y_offset), 600, 3)
 
     ## Note
     graphics.set_pen(BLACK)
@@ -130,6 +130,7 @@ def launcher():
         ih.inky_frame.button_b.led_on()
     else:
         ih.inky_frame.button_b.led_off()
+    ih.inky_frame.button_c.led_on()
 
     # Now we've drawn the menu to the screen, we wait here for the user to select an app.
     # Then once an app is selected, we set that as the current app and reset the device and load into it.
@@ -145,12 +146,12 @@ def launcher():
             log("Launcher: button B pressed")
             if not network_online:
                 time.sleep(0.3)
-                continue
-            ih.inky_frame.button_b.led_off()
-            ih.update_state("gallery_online")
-            time.sleep(0.5)
-            reset()
-        if _btn_read(ih.inky_frame.button_e):
+                ih.inky_frame.button_b.led_off()
+            else:
+                ih.update_state("gallery_online")
+                time.sleep(0.5)
+                reset()
+        if _btn_read(ih.inky_frame.button_c):
             log("Launcher: button E pressed")
             ih.update_state("test_image")
             time.sleep(0.5)
@@ -162,21 +163,20 @@ ih.clear_button_leds()
 ih.led_warn.off()
 
 ## Mount SD before Wi-Fi: on some Pico 2 W builds the card fails with ENODEV if Wi-Fi is brought up first.
-## WARNING: This causes everything to slow down to a crawl (???)
+## Use a fast/one-shot attempt so boot UI doesn't stall for minutes if SD init is slow.
 # try:
-#     log("SD pre-mount: attempting to mount SD card")
-#     if common.ensure_sd():
+#     import gallery_common as common
+#     log("SD pre-mount: fast attempt")
+#     if common.ensure_sd(fast=True):``
 #         log("SD pre-mount: success")
 # except Exception as e:
 #     log("SD pre-mount: error ", e)
 
-# Load WiFi credentials and attempt to connect
+# Load WiFi credentials (do not connect here; connect only in online app)
 try:
     from gallery_config import WIFI_PASSWORD, WIFI_SSID
-
-    log("WiFi: attempting to connect")
-    network_online = ih.network_connect(WIFI_SSID, WIFI_PASSWORD)
-    log("WiFi: connected")
+    network_online = bool(WIFI_SSID) and bool(WIFI_PASSWORD)
+    log("WiFi: config present" if network_online else "WiFi: config empty")
 except ImportError:
     log("WiFi: undefined")
 except Exception as e:
@@ -208,13 +208,21 @@ if _btn_read(ih.inky_frame.button_a) and _btn_read(ih.inky_frame.button_e):
     log("Input: A + E detected")
     launcher()
 
-if ih.file_exists("state.json"):
+if ih.file_exists(ih.STATE_PATH):
     # Loads the JSON and launches the app
     log("State: loading state")
     ih.load_state()
     log("State: loaded")
-    ih.launch_app(ih.state["run"])
-    log("State: app launched")
+    # Defensive: if we're about to run an offline-style app, ensure Wi-Fi is off.
+    try:
+        if ih.state.get("run") != "gallery_online":
+            ih.network_disconnect()
+    except Exception:
+        pass
+    # Don't re-write state.json here; launcher selection already wrote it.
+    # This allows PERMANENT_SELECTION=False to behave like "run once".
+    ih.launch_app(ih.state["run"], persist=False)
+    log("State: app launched") 
     # Passes the the graphics object from the launcher to the app
     ih.app.graphics = graphics
     ih.app.WIDTH = WIDTH

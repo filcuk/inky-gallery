@@ -1,5 +1,5 @@
 """
-Test image mode: show one JPEG from internal flash (launcher option E).
+Test image mode: show one JPEG from internal flash.
 
 Put the file on the Pico filesystem (e.g. Thonny → Save as /test/jwst1.jpg).
 Use a non-progressive JPG at or below screen size. For SD instead, use a path
@@ -18,8 +18,6 @@ HEIGHT = None
 
 # Path on device flash (not /sd — that is the SD card)
 TEST_IMAGE_PATH = "/test/jwst1.jpg"
-
-UPDATE_INTERVAL = 60
 
 _done = False
 _status = ""

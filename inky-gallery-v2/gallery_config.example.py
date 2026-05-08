@@ -42,8 +42,7 @@ PERMANENT_SELECTION = False
 # Where JPEGs live on the SD card (created automatically when possible).
 GALLERY_SD_FOLDER = "/sd/gallery"
 
-# --- Online sync (gallery_online only) ---
-
+# Online gallery sync
 GITHUB_OWNER = "your-github-username"
 GITHUB_REPO = "your-image-repo"
 # Folder inside the repo (no leading slash). Use "" for repository root.

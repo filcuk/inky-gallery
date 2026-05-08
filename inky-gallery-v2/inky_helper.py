@@ -78,6 +78,27 @@ def stop_network_led():
         pass
 
 
+def network_disconnect():
+    """Ensure Wi-Fi is off and the network LED is off."""
+    stop_network_led()
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        try:
+            wlan.disconnect()
+        except Exception:
+            pass
+        try:
+            wlan.active(False)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    try:
+        network_led_pwm.duty_u16(0)
+    except Exception:
+        pass
+
+
 def sleep(t):
     # Time to have a little nap until the next update
     rtc.clear_timer_flag()
@@ -173,6 +194,7 @@ def network_connect(SSID, PSK):
 
 state = {"run": None}
 app = None
+STATE_PATH = "/state.json"
 
 
 def file_exists(filename):
@@ -183,19 +205,19 @@ def file_exists(filename):
 
 
 def clear_state():
-    if file_exists("state.json"):
-        os.remove("state.json")
+    if file_exists(STATE_PATH):
+        os.remove(STATE_PATH)
 
 
 def save_state(data):
-    with open("/state.json", "w") as f:
+    with open(STATE_PATH, "w") as f:
         f.write(json.dumps(data))
         f.flush()
 
 
 def load_state():
     global state
-    data = json.loads(open("/state.json", "r").read())
+    data = json.loads(open(STATE_PATH, "r").read())
     if type(data) is dict:
         state = data
     
@@ -205,11 +227,11 @@ def load_state():
         if PERMANENT_SELECTION is not None and PERMANENT_SELECTION != "":
             permanent_selection = PERMANENT_SELECTION
         else:
-            log("Unable to load PERMANENT_SELECTION from gallery_config.py; defaulting to 'False'")
-            permanent_selection = False
+            log("Unable to load PERMANENT_SELECTION from gallery_config.py; defaulting to 'True'")
+            permanent_selection = True
     except ImportError:
-        log("Unable to load PERMANENT_SELECTION from gallery_config.py; defaulting to 'False'")
-        permanent_selection = False
+        log("Unable to load PERMANENT_SELECTION from gallery_config.py; defaulting to 'True'")
+        permanent_selection = True
     
     if not permanent_selection:
         clear_state()
@@ -221,8 +243,9 @@ def update_state(running):
     save_state(state)
 
 
-def launch_app(app_name):
+def launch_app(app_name, persist=True):
     global app
     app = __import__(app_name)
     log(app)
-    update_state(app_name)
+    if persist:
+        update_state(app_name)

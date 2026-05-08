@@ -4,6 +4,7 @@ import network
 
 import gallery_common as g
 import gallery_github as gh
+import inky_helper as ih
 
 graphics = None
 WIDTH = None
@@ -30,12 +31,20 @@ def update():
     gc.collect()
     cfg = g.get_config()
 
-    if not g.ensure_sd():
+    # Use fast SD mount so we can show a message quickly if init is timing out.
+    if not g.ensure_sd(fast=True):
         detail = g.sd_mount_error() or ""
         _sync_note = "SD: %s" % g.friendly_sd_message(detail)
         _files = []
         _status = "SD card not available"
         return
+
+    # Bring up Wi-Fi only when online sync is needed.
+    if (not _wifi_ok()) and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
+        ssid = getattr(cfg, "WIFI_SSID", "") or ""
+        pwd = getattr(cfg, "WIFI_PASSWORD", "") or ""
+        if ssid and pwd:
+            ih.network_connect(ssid, pwd)
 
     if _wifi_ok() and getattr(cfg, "GITHUB_PAT", "") and gh.should_sync(cfg):
         err = gh.sync_from_github(cfg)
@@ -49,7 +58,13 @@ def update():
         lines = ["Online gallery", _sync_note or _status or "No JPEGs after sync"]
         _status = lines[-1]
         return
-    _idx = (_idx + 1) % len(_files)
+    st = g.load_slideshow_state("online")
+    last_path = st.get("last_path")
+    if last_path and last_path in _files:
+        _idx = (_files.index(last_path) + 1) % len(_files)
+    else:
+        _idx = 0
+    g.save_slideshow_state("online", {"last_path": _files[_idx]})
     _status = ""
 
 
