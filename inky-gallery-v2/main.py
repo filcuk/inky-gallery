@@ -219,7 +219,6 @@ ih.led_warn.off()
 ## Mount SD before Wi-Fi: on some Pico 2 W builds the card fails with ENODEV if Wi-Fi is brought up first.
 ## Use a fast/one-shot attempt so boot UI doesn't stall for minutes if SD init is slow.
 try:
-    import gallery_common as common
     log("SD pre-mount: fast attempt")
     if common.ensure_sd(fast=True):
         log("SD pre-mount: success")
