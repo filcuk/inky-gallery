@@ -4,7 +4,21 @@ Custom gallery for **Pimoroni Inky Frame**, aimed at 7.3 with **Raspberry Pi Pic
 
 Official Inky Frame guide: **[Getting started with Inky Frame](https://learn.pimoroni.com/article/getting-started-with-inky-frame)**.
 
----
+## Functionality
+
+- Update included config
+- Device loads into a menu
+- Choose between online and offline mode
+- Online polls remote for new images regularly while running a slideshow
+- Offline just runs a slideshow
+- Slideshow uses a randomised 'playlist' which, together with last position, persists across restarts
+- Playlists can be manually randomised from the main menu
+
+## Repository structure
+
+- **`inky-gallery-v1/`**: earlier offline-only experiment
+- **`inky-gallery-v2/`**: launcher with gallery offline/online modes
+- **`inky-frame-original/`**: reference copy of stock launcher-style files
 
 ## Flashing firmware with Raspberry Pi Imager
 
@@ -19,8 +33,39 @@ Official Inky Frame guide: **[Getting started with Inky Frame](https://learn.pim
 3. **Flash the UF2**
   Drag-and-drop the .uf2 file onto the mounted drive, it will restart automatically
 
-## Repository structure
+## Erasing flash ("nuke") on Pico / Pico 2 W
 
-- **`inky-gallery-v1/`**: earlier offline-only experiment
-- **`inky-gallery-v2/`**: launcher with gallery offline/online modes
-- **`inky-frame-original/`**: reference copy of stock launcher-style files
+Wipe in case of corrupt filesystem, stuck `main.py`, or any odd behaviour.  
+**[Pico Universal Flash Nuke](https://github.com/Gadgetoid/pico-universal-flash-nuke)** detects flash size and erases it; intended to work across **RP2040 and RP2350** with a single UF2.  
+  
+1. **Download the nuke**: [releases](https://github.com/Gadgetoid/pico-universal-flash-nuke/releases/latest)
+1. **Enter BOOTSEL**, copy the nuke UF2 onto the drive, wait for it to finish and the board to reconnect
+1. **Flash MicroPython** and restore your files
+
+## Uploading files to Pico
+
+1. Install [Thonny](https://thonny.org/)
+2. Launch and select board at the bottom right corner
+3. Press 'Stop' to attach/restart backend
+
+## SD card
+
+### Mount SD card before Wi-Fi 
+`inky-gallery-v2` also **mounts the SD before Wi‑Fi starts** to avoid init-order problems on some **Pico 2 W** boards.
+
+### SD mount helper is "active" (by design)
+The SD mount routine in `inky-gallery-v2/gallery_common.py` may **temporarily disconnect/disable Wi‑Fi** while attempting to mount the SD card. This is intentional because some Pico 2 W/Inky Frame firmware builds fail SD initialisation if Wi‑Fi is active first.
+
+### SD: timeout waiting for v2 card
+- Reformat the card
+- Try using a different card
+- Try using a 32GB or smaller card
+- Try using a more recent make card
+
+### `[Errno 19] ENODEV`
+**`[Errno 19] ENODEV`** means MicroPython cannot see the SD hardware: reseat the card, format as **FAT**, try another card (see [Pimoroni’s SD notes](https://learn.pimoroni.com/article/getting-started-with-inky-frame)).  
+
+## Slideshow navigation (A/E)
+In slideshow apps, **A = previous** and **E = next**.
+
+Note: the button press is detected during the USB-powered wait/sleep loop. On **battery sleep**, the Pico powers down between refreshes, so A/E cannot interrupt sleep in the same way (the button will work again after the next wake).

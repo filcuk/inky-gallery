@@ -19,7 +19,7 @@ This file orients automated assistants and human contributors to **inky-frame**:
 |------|------|
 | **`inky-frame-original/`** | Snapshot of the **stock launcher and example apps** (`main.py`, `inky_helper.py`, `lib/`, per-button apps). Use this to see **exact** menu layout, `state.json` flow, and app contracts without chasing submodule history. |
 | **`inky-gallery-v1/`** | First gallery attempt: **offline-only** slideshow from SD (based on [PiInk](https://github.com/tlstommy/PiInk)), single `main.py`, timer-driven. |
-| **`inky-gallery-v2/`** | **Primary implementation target** for the gallery described below. May start empty; new code should live here unless deliberately extending upstream patterns. |
+| **`inky-gallery-v2/`** | **Deployable gallery bundle**: stock-style `main.py` + `inky_helper.py`, `gallery_offline.py` / `gallery_online.py`, `gallery_common.py`, `gallery_github.py`, and `gallery_config.example.py` (copy to **`gallery_config.py`** on the device; gitignored). Copy these files to the **MicroPython device root** together with `secrets.py`. |
 | **`pimoroni/`** | **Git submodule**: [github.com/pimoroni/inky-frame](https://github.com/pimoroni/inky-frame) — upstream examples, `inkylauncher`, docs. Prefer **`inky-frame-original/`** for “what ships on device” comparisons unless you need the full upstream tree. |
 
 Root **`README.md`** may only cover firmware flashing; treat **this file** as the project intent doc until the human author expands the README.
@@ -34,7 +34,7 @@ Root **`README.md`** may only cover firmware flashing; treat **this file** as th
    - **Online gallery** — periodically **sync images from a GitHub repository** (authenticated with a **PAT**), write them to SD, then run the slideshow (or equivalent update/draw loop).
 3. **Configuration** (at minimum: slideshow interval, PAT, GitHub repo identity/path) should live in a **separate `.py` module** so the main logic stays readable and secrets can stay out of version control if desired.
 
-Exact GitHub API surface (Contents API, raw URLs, release assets, etc.) is an implementation choice; document the chosen approach in code comments or the human README when stable.
+v2 uses the **GitHub REST Contents API** (`Accept: application/vnd.github+json` for directory listing, `application/vnd.github.v3.raw` per-file download) with a **Bearer PAT**. Large directories may hit API pagination (not handled yet in v2).
 
 ---
 
@@ -59,6 +59,8 @@ When adding gallery apps, **either** follow this contract so they plug into the 
 ## References
 
 - Upstream submodule: [github.com/pimoroni/inky-frame](https://github.com/pimoroni/inky-frame)
+- **Inky Frame (MicroPython) — `inky_frame` module**: [docs/inky_frame.md](https://github.com/pimoroni/inky-frame/blob/main/docs/inky_frame.md) (buttons, LEDs, RTC/sleep, colours, JPEG caveats)
+- **PicoGraphics**: [micropython/modules/picographics/README.md](https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/modules/picographics/README.md) (displays, pens, text, shapes, JPEG/PNG)
 - Firmware releases: [github.com/pimoroni/pimoroni-pico/releases](https://github.com/pimoroni/pimoroni-pico/releases)
 - Prior art for offline SD gallery: [github.com/tlstommy/PiInk](https://github.com/tlstommy/PiInk) (v1 in this repo is derived from that idea)
 
