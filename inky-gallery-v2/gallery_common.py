@@ -296,9 +296,20 @@ def generate_playlist(folder):
 def ensure_playlist(folder):
     """Return playlist items; generate if missing/empty."""
     items = load_playlist(folder)
-    if items:
-        return items
-    return generate_playlist(folder)
+    if not items:
+        return generate_playlist(folder)
+    # Prune entries that no longer exist on disk.
+    pruned = []
+    changed = False
+    for p in items:
+        try:
+            os.stat(p)
+            pruned.append(p)
+        except OSError:
+            changed = True
+    if changed:
+        save_playlist(folder, pruned)
+    return pruned
 
 
 def load_position():

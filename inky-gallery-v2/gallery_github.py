@@ -123,6 +123,7 @@ def sync_from_github(cfg):
     total = 0
     downloaded = 0
     skipped = 0
+    remote_names = set()
 
     for ent in entries:
         if ent.get("type") != "file":
@@ -131,6 +132,7 @@ def sync_from_github(cfg):
         low = name.lower()
         if not (low.endswith(".jpg") or low.endswith(".jpeg")):
             continue
+        remote_names.add(name)
         total += 1
         rel_path = ent.get("path")
         if not rel_path:
@@ -158,6 +160,61 @@ def sync_from_github(cfg):
         downloaded += 1
         log("GitHub: saved", dest_path)
         gc.collect()
+
+    # If files were deleted upstream, move local copies out of the slideshow folder.
+    deleted_dir = dest_root + "/deleted"
+    try:
+        gc_common.ensure_dir(deleted_dir)
+    except Exception:
+        pass
+    moved = 0
+    try:
+        for n in os.listdir(dest_root):
+            if n.startswith(".") or n == "deleted":
+                continue
+            low = n.lower()
+            if not (low.endswith(".jpg") or low.endswith(".jpeg")):
+                continue
+            if n in remote_names:
+                continue
+            src = dest_root + "/" + n
+            dst = deleted_dir + "/" + n
+            try:
+                os.stat(dst)
+                # Avoid overwrite; add a timestamp suffix.
+                ts = str(int(time.time())) if time.time() >= 1e9 else "0"
+                base = n
+                dot = base.rfind(".")
+                if dot > 0:
+                    dst = deleted_dir + "/" + base[:dot] + "." + ts + base[dot:]
+                else:
+                    dst = deleted_dir + "/" + base + "." + ts
+            except OSError:
+                pass
+            try:
+                os.rename(src, dst)
+                moved += 1
+                log("GitHub: moved deleted", src, "->", dst)
+            except OSError as e:
+                log("GitHub: move failed", src, type(e).__name__, e)
+    except OSError:
+        pass
+
+    # Keep slideshow playlist clean if we moved anything.
+    if moved:
+        try:
+            items = gc_common.load_playlist(dest_root)
+            if items:
+                pruned = []
+                for p in items:
+                    try:
+                        os.stat(p)
+                        pruned.append(p)
+                    except OSError:
+                        pass
+                gc_common.save_playlist(dest_root, pruned)
+        except Exception:
+            pass
 
     log("GitHub: done", "listed =", total, "downloaded =", downloaded, "skipped =", skipped)
     try:
