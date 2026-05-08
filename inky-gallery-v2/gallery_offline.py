@@ -1,6 +1,8 @@
 import gc
 
 import gallery_common as g
+import inky_helper as ih
+import inky_frame
 
 graphics = None
 WIDTH = None
@@ -30,7 +32,22 @@ def update():
         log("Offline: interval", UPDATE_INTERVAL, "minute(s)")
     except Exception:
         pass
-    _path, _status = g.slideshow_next(cfg.GALLERY_SD_FOLDER)
+    nav = None
+    try:
+        nav = ih.consume_nav_request()
+    except Exception:
+        nav = None
+    if nav == "prev":
+        try:
+            ih.start_button_led_throb(inky_frame.button_a)
+        except Exception:
+            pass
+    elif nav == "next":
+        try:
+            ih.start_button_led_throb(inky_frame.button_e)
+        except Exception:
+            pass
+    _path, _status = g.slideshow_next(cfg.GALLERY_SD_FOLDER, direction=("prev" if nav == "prev" else "next"))
     _files = []  # legacy, no longer used
     _idx = -1
 

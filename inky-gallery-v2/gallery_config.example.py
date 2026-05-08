@@ -29,15 +29,18 @@ QUOTES = [
     "Picture this!"
 ]
 
+# Make option selection 'permanent'; require user to reset to launcher
+PERMANENT_SELECTION = False
+
 # WiFi credentials
 WIFI_SSID = "your-wifi-ssid"
 WIFI_PASSWORD = "your-wifi-password"
 
-# Minutes between slideshow advances (stock launcher calls ih.sleep with this).
-SLIDESHOW_INTERVAL_MINUTES = 60
+# Minutes between slideshow advances; used for sleep
+SLIDESHOW_INTERVAL_MINUTES = 1440
 
-# Make option selection 'permanent'; require user to reset to launcher
-PERMANENT_SELECTION = False
+# How often to re-list and download from GitHub; should be a multiple of SLIDESHOW_INTERVAL_MINUTES
+GITHUB_SYNC_INTERVAL_MINUTES = 1440
 
 # Where JPEGs live on the SD card (created automatically when possible).
 GALLERY_SD_FOLDER = "/sd/gallery"
@@ -51,9 +54,6 @@ GITHUB_BRANCH = "main"
 
 # Classic PAT or fine-grained token with Contents: Read on this repo.
 GITHUB_PAT = ""
-
-# How often to re-list and download from GitHub (wall clock, best effort using time.time()).
-GITHUB_SYNC_INTERVAL_MINUTES = 1440
 
 # Customise SD SPI/pins 
 # SD_SPI_ID = 0

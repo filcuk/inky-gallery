@@ -5,6 +5,7 @@ import network
 import gallery_common as g
 import gallery_github as gh
 import inky_helper as ih
+import inky_frame
 
 graphics = None
 WIDTH = None
@@ -41,6 +42,22 @@ def update():
     except Exception:
         pass
 
+    nav = None
+    try:
+        nav = ih.consume_nav_request()
+    except Exception:
+        nav = None
+    if nav == "prev":
+        try:
+            ih.start_button_led_throb(inky_frame.button_a)
+        except Exception:
+            pass
+    elif nav == "next":
+        try:
+            ih.start_button_led_throb(inky_frame.button_e)
+        except Exception:
+            pass
+
     # Ensure SD is mounted before Wi-Fi is started
     if not g.ensure_sd(fast=True):
         if not g.ensure_sd():
@@ -70,7 +87,11 @@ def update():
         _sync_note = "Set GITHUB_PAT in gallery_config.py"
 
     # Slideshow step. If we downloaded new files, insert them as "next up" and jump to them.
-    _path, _status = g.slideshow_next(cfg.GALLERY_SD_FOLDER, insert_next_paths=new_files)
+    _path, _status = g.slideshow_next(
+        cfg.GALLERY_SD_FOLDER,
+        insert_next_paths=new_files,
+        direction=("prev" if nav == "prev" else "next"),
+    )
     _files = []  # legacy, no longer used
     _idx = -1
 

@@ -363,7 +363,7 @@ def insert_into_playlist(items, insert_after_idx, new_paths):
     return out, to_add[0]
 
 
-def slideshow_next(folder, jump_to_path=None, insert_next_paths=None):
+def slideshow_next(folder, jump_to_path=None, insert_next_paths=None, direction="next"):
     """Common slideshow step used by offline/online.
 
     - Ensures playlist exists (generates if missing)
@@ -398,7 +398,10 @@ def slideshow_next(folder, jump_to_path=None, insert_next_paths=None):
     if jump_to_path and jump_to_path in items:
         next_idx = items.index(jump_to_path)
     else:
-        next_idx = (cur_idx + 1) % len(items)
+        if direction == "prev":
+            next_idx = (cur_idx - 1) % len(items)
+        else:
+            next_idx = (cur_idx + 1) % len(items)
 
     next_path = items[next_idx]
     save_position(next_idx, next_path)

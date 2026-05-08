@@ -114,8 +114,40 @@ def sleep(t):
     # this allows the device to go into sleep mode when on battery power.
     hold_vsys_en_pin.init(Pin.IN)
 
-    # Regular time.sleep for those powering from USB
-    time.sleep(60 * t)
+    # Regular time.sleep for those powering from USB, but allow button navigation.
+    # Note: this won't help on battery sleep (device powers down).
+    global _nav_request
+    try:
+        total_ms = int(t) * 60 * 1000
+    except Exception:
+        total_ms = 0
+    start = time.ticks_ms()
+    while True:
+        try:
+            if inky_frame.button_a.read():
+                _nav_request = "prev"
+                return
+            if inky_frame.button_e.read():
+                _nav_request = "next"
+                return
+        except Exception:
+            pass
+        if total_ms <= 0:
+            break
+        if time.ticks_diff(time.ticks_ms(), start) >= total_ms:
+            break
+        time.sleep_ms(100)
+
+
+_nav_request = None
+
+
+def consume_nav_request():
+    """Return 'prev'/'next' once, then clear."""
+    global _nav_request
+    r = _nav_request
+    _nav_request = None
+    return r
 
 
 # Turns off the button LEDs
