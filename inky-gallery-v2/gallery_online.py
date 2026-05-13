@@ -70,15 +70,30 @@ def update():
             ih.network_connect(ssid, pwd)
 
     new_files = []
-    if _wifi_ok() and getattr(cfg, "GITHUB_PAT", ""):
+    pat = getattr(cfg, "GITHUB_PAT", "") or ""
+    if _wifi_ok() and pat:
         new_files, err = gh.sync_from_github(cfg)
         _sync_note = "" if err is None else err
-        # Power saving: once sync is complete, shut Wi-Fi back down.
+        hook = (getattr(cfg, "WEBHOOK_URL", "") or "").strip()
+        if hook and _wifi_ok():
+            # Lazy import so a broken/missing gallery_webhook never prevents the gallery from loading.
+            try:
+                import gallery_webhook
+
+                gallery_webhook.notify_github_sync(
+                    cfg,
+                    success=(err is None),
+                    downloaded=len(new_files),
+                    error=err,
+                )
+            except Exception:
+                pass
+        # Power saving: once sync (and optional webhook) are complete, shut Wi-Fi back down.
         try:
             ih.network_disconnect()
         except Exception:
             pass
-    elif not getattr(cfg, "GITHUB_PAT", ""):
+    elif not pat:
         _sync_note = "Set GITHUB_PAT in gallery_config.py"
 
     # Slideshow step. If we downloaded new files, insert them as "next up" and jump to them.

@@ -36,21 +36,28 @@ PERMANENT_SELECTION = False
 WIFI_SSID = "your-wifi-ssid"
 WIFI_PASSWORD = "your-wifi-password"
 
-# Minutes between slideshow advances; used for sleep and github polling
+# Minutes between slideshow advances; used for sleep and github polling; default 1440 minutes (1 day)
 SLIDESHOW_INTERVAL_MINUTES = 1440
 
-# Where JPEGs live on the SD card (created automatically when possible).
+# Where JPEGs live on the SD card (created automatically when possible)
 GALLERY_SD_FOLDER = "/sd/gallery"
 
 # Online gallery sync
 GITHUB_OWNER = "your-github-username"
 GITHUB_REPO = "your-image-repo"
-# Folder inside the repo (no leading slash). Use "" for repository root.
+# Folder inside the repo (no leading slash). Use "" for repository root
 GITHUB_PATH = "images"
 GITHUB_BRANCH = "main"
 
-# Classic PAT or fine-grained token with Contents: Read on this repo.
+# Classic PAT or fine-grained token with Contents: Read on this repo
 GITHUB_PAT = ""
+
+# Call home webhook used to track device activity; leave WEBHOOK_URL empty to disable.
+# The device issues a GET with query params: name (NAME), sync=ok|fail, downloaded=N on ok,
+# error=... on fail. Optional HTTP Basic Auth:
+WEBHOOK_URL = ""
+WEBHOOK_USER = ""
+WEBHOOK_PASSWORD = ""
 
 # Customise SD SPI/pins 
 # SD_SPI_ID = 0

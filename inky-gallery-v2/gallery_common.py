@@ -26,6 +26,10 @@ class _Defaults:
     GITHUB_PATH = ""
     GITHUB_BRANCH = "main"
     GITHUB_PAT = ""
+    WEBHOOK_URL = ""
+    WEBHOOK_USER = ""
+    WEBHOOK_PASSWORD = ""
+    NAME = ""
 
 
 def get_config():
